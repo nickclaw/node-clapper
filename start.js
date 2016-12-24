@@ -1,2 +1,3 @@
+require('./.env');
 require('babel-register');
-require('./index');
+require('./src');
