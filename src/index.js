@@ -10,6 +10,7 @@ const mic = new Mic({
 
 const stream = mic.getAudioStream();
 
-listenForClap(stream, toggleLights);
+listenForClap(stream)
+  .each(toggleLights);
 
 mic.start();

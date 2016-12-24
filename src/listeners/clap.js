@@ -4,7 +4,8 @@ import _ from 'lodash';
 
 const debug = createDebug('clapper:listener:clap');
 
-export default (stream, onClap) => {
+export default (stream) => {
+  const out = h();
   let lastVal = 0;
   let lastTime = 0;
 
@@ -31,11 +32,15 @@ export default (stream, onClap) => {
         if (lastTime && diff > 100 && diff < 600) {
           debug('detected second clap');
           lastTime = 0;
-          onClap();
+          out.write(true);
         } else {
           debug('detected first clap');
           lastTime = now;
         }
       }
+
+      return false;
     });
+
+  return out;
 }
