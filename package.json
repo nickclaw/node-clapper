@@ -13,7 +13,8 @@
     "highland": "^2.10.1",
     "lodash": "^4.17.2",
     "mic": "^2.1.1",
-    "node-hue-api": "^2.3.0"
+    "node-hue-api": "^2.3.0",
+    "watson-developer-cloud": "^2.14.3"
   },
   "devDependencies": {
     "babel-preset-env": "^1.1.4",
