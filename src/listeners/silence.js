@@ -5,10 +5,8 @@ import _ from 'lodash';
 const debug = createDebug('clapper:listener:silence');
 
 export default len => stream => {
-  const out = h();
-  let timeout = 0;
 
-  h(stream)
+  return h(stream)
     .map(_.toArray)
     .flatten()
     .batch(2)
@@ -17,24 +15,9 @@ export default len => stream => {
       if (b > 128) b -= 256;
       return Math.abs(b * 256 + a);
     })
-    .each(val => {
-      if (timeout && val > 2000) {
-        debug('too loud, clearing');
-        clearTimeout(timeout);
-        timeout = null;
-        return;
-      }
-
-      if (!timeout && val < 2000) {
-        debug('starting timer');
-        timeout = setTimeout(() => {
-          debug('%s ms of silence', len);
-          out.write(true);
-          timeout = null;
-        }, len);
-        return;
-      }
-    });
-
-    return out;
+    .batch(250)
+    .map(vals => Math.max(0, ...vals))
+    .filter(val => val > 2000)
+    .debounce(len)
+    .map(val => true);
 }
