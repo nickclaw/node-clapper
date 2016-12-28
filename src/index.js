@@ -1,8 +1,7 @@
 import Mic from 'mic';
 
+import textAfterClap from './listeners/text-after-clap';
 import listenForClap from './listeners/clap';
-import listenForText from './listeners/text';
-import listenForSilence from './listeners/silence';
 import toggleLights from './actions/toggle-lights';
 
 const mic = new Mic({
@@ -12,14 +11,11 @@ const mic = new Mic({
 
 const stream = mic.getAudioStream();
 
-listenForClap(stream)
-  .each(toggleLights);
-
-listenForText(stream)
-  .each(console.log);
-
-listenForSilence(5000)(stream)
-  .each(() => console.log('silence'));
-
+textAfterClap(stream)
+  .subscribe(words => {
+    switch(words[0]) {
+      case 'lights': toggleLights();
+    }
+  })
 
 mic.start();

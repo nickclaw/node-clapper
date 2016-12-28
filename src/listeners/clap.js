@@ -1,46 +1,44 @@
-import h from 'highland';
-import createDebug from 'debug';
+import { Observable } from 'rxjs';
 import _ from 'lodash';
+import createDebug from 'debug';
 
 const debug = createDebug('clapper:listener:clap');
 
-export default (stream) => {
-  const out = h();
+export default stream => {
   let lastVal = 0;
   let lastTime = 0;
 
-  h(stream)
+  return Observable.fromEvent(stream, 'data')
     .map(_.toArray)
-    .flatten()
-    .batch(2)
+    .mergeMap(_.identity)
+    .bufferCount(2)
     .map(chunk => {
       let [a, b] = chunk;
       if (b > 128) b -= 256;
       return Math.abs(b * 256 + a);
     })
-    .batch(250)
-    .map(vals => Math.max(0, ...vals))
-    .each(val => {
+    .bufferCount(250)
+    .map(vals => Math.max(...vals))
+    .filter(val => {
       const soundDiff = val - lastVal;
       lastVal = val;
 
-      if (soundDiff > 10000) {
-        debug('detected loud noise');
-        const now = Date.now();
-        const diff = now - lastTime;
+      if (soundDiff < 10000) {
+        return false;
+      }
 
-        if (lastTime && diff > 100 && diff < 600) {
-          debug('detected second clap');
-          lastTime = 0;
-          out.write(true);
-        } else {
-          debug('detected first clap');
-          lastTime = now;
-        }
+      debug('detected loud noise');
+      const now = Date.now();
+      const diff = now - lastTime;
+      lastTime = now;
+
+      if (diff > 100 && diff < 600) {
+        debug('detected second clap');
+        return true;
       }
 
       return false;
-    });
-
-  return out;
+    })
+    .map(v => true);
 }
+``
