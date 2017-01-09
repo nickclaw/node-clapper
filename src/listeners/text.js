@@ -5,16 +5,26 @@ import createDebug from 'debug';
 
 const debug = createDebug('clapper:listener:text');
 
+const transformOptions = {
+  content_type: 'audio/l16; rate=16000',
+};
+
 export default (stream) => {
   const observer = new Observable(subscriber => {
-    debug('subscribing to stt stream');
-    const transform = stt.createRecognizeStream({ content_type: 'audio/l16; rate=16000' });
+    debug('connecting to stream');
+    const transform = stt.createRecognizeStream(transformOptions);
     const out = stream.pipe(transform);
+    transform.once('connect', () => debug('socket connected'));
+    transform.once('listening', () => debug('socket listening'));
+    transform.once('stopping', () => debug('socket stopping'));
 
-    const dataWrapper = (buffer) => {
-      const text = buffer.toString('utf-8');
+    function dataWrapper(buffer) {
+      const text = buffer.toString('utf-8')
+        .toLowerCase()
+        .trim();
+
       debug('heard "%s"', text);
-      subscriber.next(text);
+      if (text) subscriber.next(text);
     }
 
     out.addListener('data', dataWrapper);
@@ -24,13 +34,11 @@ export default (stream) => {
       out.removeListener('data', dataWrapper);
       stream.unpipe(transform);
       stream.resume();
-      out.stop();
+      transform.stop();
     }
   });
 
   return observer
-    .map(str => str.toLowerCase())
-    .map(str => str.trim())
     .map(str => str.split(/\s+/))
     .mergeMap(_.identity);
 }
